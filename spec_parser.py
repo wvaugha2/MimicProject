@@ -1,6 +1,6 @@
 '''
 -- ------------------------------------------------------------------------------------
--- Title: Database Accessor
+-- Title: Specifications File Parser
 -- Description: This module contains the functions needed to correctly parse the 
 -- specifications file created by the user.
 -- ------------------------------------------------------------------------------------
