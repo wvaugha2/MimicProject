@@ -3,16 +3,21 @@
 #ICUs
 
 CCU     True
-SICU    False
-MICU    False 
+SICU    True
+MICU    True 
 NICU    False  
-CSRU    False
+CSRU    True
 TSICU   False
 
+#Patients
+
+Age; 16; 999
+Sex; Both
+Hours; 48
 
 #Parameters
 
-Albumin; ALBUMIN; u; [1234,124]
+Albumin; ALBUMIN; u; [50862,3066,1521,226981]
 ALP; ALKALINE_PHOSPHATASE; u; [50863,3728]
 ALT; ALANINE_TRANSAMINASE; u; [50861,769,220644]
 AST; ASPARTATE_TRANSAMINASE; u; [50878,220587,3801]
