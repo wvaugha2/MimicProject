@@ -57,15 +57,15 @@ if __name__ == '__main__':
         "database based on Specifications.txt.\n")
 
     # Prompt the user for access to the database.
-    #USERNAME = raw_input('Enter in your username for accessing Mimic III: ')
-    #PASSWORD = getpass.getpass('Enter in your password for accessing Mimic III: ')
+    username = raw_input('Enter in your username for accessing Mimic III: ')
+    password = getpass.getpass('Enter in your password for accessing Mimic III: ')
 
     '''
     # Connect to mimic database.
     try:
         con = psycopg2.connect(database= 'mimic',
-            user = 'tyvaughan',
-            password = 'Boston94',
+            user = username,
+            password = password,
             host = 'localhost',
             port = 5432)
     except:
