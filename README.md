@@ -1,7 +1,7 @@
 # MimicProject
 To create a patient dataset, make sure that the MimicIII database is accessible, then use the command 'python data_gen.py'.  This will use the specifications provided in Specifications.txt to generate a patient dataset.
 
-#Description of Specifications.txt
+#Specifications.txt
 ## ICUs
 For each of the six ICU types, the user should specify 'True' if he or she wishes to use patients of that ICU type, or 'False' if not.
 Ex: CCU True
