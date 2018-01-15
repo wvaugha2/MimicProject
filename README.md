@@ -1,5 +1,5 @@
 # MimicProject
-To create a patient dataset, make sure that the MimicIII database is accessible, then use the command 'python data_gen.py'.  This will use the specifications provided in Specifications.txt to generate a patient dataset.
+To create a patient dataset, make sure that the MimicIII database is accessible, then use the command 'python2 data_gen.py'.  This will use the specifications provided in Specifications.txt to generate a patient dataset.
 
 #Specifications.txt
 
