@@ -1,6 +1,5 @@
 # MimicProject
 
-# Specifications.txt
 ## ICUs
 For each of the six ICU types, the user should specify 'True' if he or she wishes to use patients of that ICU type, or 'False' if not.
 Ex: CCU True
@@ -31,3 +30,6 @@ where Abbreviation is how the string that the user wishes to represent the measu
 on what the measurement is (can be the full name of the measurement or more), Unit is the unit that the user wishes to use, and MIMIC_IDs is the
 list of measurement IDs used within the Mimim database to specify the measurement values.
 Ex: Albumin; ALBUMIN; u; [1234,124]
+=======
+### About
+This repository is for developing a python tool for the MIMIC-III database that will easily obtain patient information, performing data cleansing and formatting as specified by the user.
