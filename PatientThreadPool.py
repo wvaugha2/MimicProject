@@ -201,7 +201,7 @@ class PatientThreadPool:
                         val = 0.0
 
                         # Handle the value of mechanical ventilation measurements.
-                        if(mim[2] == 722):
+                        if(mim[2] in (467,468,720,722)):
 
                             # Assign the appropriate mech vent value
                             if(mim[3] == "NotStopd" and lastvent == None):
