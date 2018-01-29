@@ -141,7 +141,7 @@ class PatientThreadPool:
         print("Beginning thread processing...")
         for i in range(self.cpus):
             t = threading.Thread(target=self.evaluateWorker, args=(
-                PatientInfo['Hours'], ParamInfo, pchunks[i], self.connections[i]
+                PatientInfo['Hours'], ParamInfo, pchunks[i]
             ))
             self.pool.append(t)
             t.setDaemon(False)
@@ -160,7 +160,7 @@ class PatientThreadPool:
     #               the patient information files.
     # hours:        This is the total number of hours from an ICU stay that are desired.
     # paraminfo:    This is the parameter information gathered from Specifications.txt
-    def evaluateWorker(self, hours, paraminfo, data, cur):
+    def evaluateWorker(self, hours, paraminfo, data):
         patient_info = []
         ICUs = ['CCU', 'SICU', 'MICU', 'NICU', 'CSRU', 'TSICU']
 
