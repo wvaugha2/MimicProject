@@ -16,27 +16,24 @@ TO-DO: Add a database authentication file that authentication information can be
 '''
 
 # Standard library imports
+import os
 import sys
 import time
 import pickle
-import thread
 import itertools
-from multiprocessing import Pool, cpu_count
-from functools import partial
 
 # Related 3rd party imports
 import numpy as np
 
 # Local application imports
-# ...
+# . . .
 
 # The function below takes the specification information and uses the functions in this file
 # data_access.py to access and return the dataset from the database.
 # ICUInfo:     a list of True/False values that determine which ICUs to use.
 # ParamInfo:   a dictionary of measurement parameters to obtain from the database
 # PatientInfo: a dictionary of patient information specifying the types of patients to analyze
-def obtainData(ICUInfo, ParamInfo, PatientInfo, cur):
-    data = []
+def obtainData(ICUInfo, ParamInfo, PatientInfo, cur, ptp):
 
     #####################################
     # Create and perform database queries
@@ -45,24 +42,13 @@ def obtainData(ICUInfo, ParamInfo, PatientInfo, cur):
     # Obtain the patient and measurement queries
     patientquery, measurementquery = makeQueries(ICUInfo, ParamInfo, PatientInfo)
 
-    '''
-    # Access patient information
-    cur.execute(patientquery)
-    pidlist = cur.fetchall()
-    print(pidlist[0])
-    with open('patients', 'wb') as fp:
-        pickle.dump(pidlist, fp)
-    '''
-
+    # Access patient information from database
+    atime = time.time()
+    #cur.execute(patientquery)
+    #patients = cur.fetchall()
     with open ('patients', 'rb') as fp:
-        pidlist = pickle.load(fp)
-    print(pidlist[0])
-
-    '''
-    # Get a string list of patient subject_ids and hadm_ids 
-    subject_ids = '\''+"','".join("%s" % patient[0] for patient in pidlist[:100])+'\''
-    hadm_ids = '\''+"','".join("%s" % patient[2] for patient in pidlist[:100])+'\''
-
+        patients = pickle.load(fp)
+    print('Obtained patient info from database: {:10.2f} seconds'.format(time.time() - atime))
     
     # Get a string list of measurement IDs
     m_ids = '\''+"','".join(
@@ -70,55 +56,39 @@ def obtainData(ICUInfo, ParamInfo, PatientInfo, cur):
         for key in ParamInfo.keys()
         )+'\''
 
-    # Access measurement information
-    cur.execute(measurementquery % (subject_ids, hadm_ids, m_ids, 
-                                   subject_ids, hadm_ids, m_ids, 
-                                   subject_ids, hadm_ids, m_ids,))
-    mlist = cur.fetchall()
-    with open('measurements', 'wb') as fp:
-        pickle.dump(mlist, fp)
+    # Access measurement information from database
+    atime = time.time()
+    ptp.obtainMeasurements(patients, m_ids, measurementquery)
+    patientlist = ptp.getResults()
+
+    '''
+    patientlist = []
+    for patient in patients:
+        cur.execute(measurementquery % (patient[0], patient[2], m_ids, patient[5],
+                                        patient[0], patient[2], m_ids, patient[5], 
+                                        patient[0], patient[2], m_ids, patient[5]))
+        mlist = cur.fetchall()
+        patientlist.append((patient,mlist))
     '''
 
-    with open ('measurements', 'rb') as fp:
-        mlist = pickle.load(fp)
-    print(mlist[0])
+    print('Obtained measurements from database: {:10.2f} seconds'.format(time.time() - atime))
+    return patientlist
 
-    #####################################
-    # Put patient information in chunks
-    #####################################
+    #print(pidlist[0])
+    #with open('patients', 'wb') as fp:
+    #    pickle.dump(pidlist, fp)
 
-    # Get CPU count for current architecture
-    try:
-        cpus = cpu_count()
-    except:
-        cpus = 2
+    #with open ('patients', 'rb') as fp:
+    #    pidlist = pickle.load(fp)
+    #print(pidlist[0])
 
-    # Split patients into cpus # of nearly equally sized lists.
-    pchunks = np.array_split(np.array(pidlist[:100]), cpus)
+    #with open('measurements', 'wb') as fp:
+    #    pickle.dump(mlist, fp)
+    #'''
 
-    # Split measurements up based on patient ids in each chunk.
-    mchunks = []
-    prev = 0
-    for i in range(1, cpus+1):
-        if(i == cpus):
-            mchunks.append(mlist[prev:])
-        else:
-            ind = mlist.index(filter(lambda m: m[0] == pchunks[i][0][0], mlist)[0])
-            mchunks.append(mlist[prev:ind])
-            prev = ind
-
-    #####################################
-    # Create and run threads on chunks
-    #####################################
-
-    pool = Pool(processes=cpus)
-    data = list(itertools.chain.from_iterable(
-            pool.map(partial(processPatients, hours=PatientInfo['Hours'], 
-            paraminfo=ParamInfo), zip(pchunks, mchunks))
-            ))
-
-    return data
-
+    #with open ('measurements', 'rb') as fp:
+    #    mlist = pickle.load(fp)
+    #print(mlist[0])
 
 
 # The function below takes the specification information and generates SQL queries to gather
@@ -198,76 +168,33 @@ def makeQueries(ICUInfo, ParamInfo, PatientInfo):
     # Create the query to obtain measurements
     measurementquery = "SELECT lab.subject_id, lab.charttime, lab.itemid, lab.value \
                         FROM mimiciii.labevents lab \
-                        WHERE subject_id IN (%s) \
-                        AND lab.hadm_id IN (%s) \
+                        WHERE subject_id = (%s) \
+                        AND lab.hadm_id = (%s) \
                         AND lab.itemid IN (%s) \
+                        AND lab.charttime >= '%s' \
                         AND lab.value != '' \
                         UNION ALL \
-                        SELECT cha.subject_id, cha.charttime, cha.itemid, cha.value \
+                        SELECT cha.subject_id, cha.charttime, cha.itemid, \
+                        CASE \
+                            WHEN cha.itemid = 722 \
+                            THEN cha.stopped \
+                            WHEN cha.itemid != 722 \
+                            THEN cha.value \
+                        END \
                         FROM mimiciii.chartevents cha \
-                        WHERE subject_id IN (%s) \
-                        AND cha.hadm_id IN (%s) \
+                        WHERE subject_id = (%s) \
+                        AND cha.hadm_id = (%s) \
                         AND cha.itemid IN (%s) \
+                        AND cha.charttime >= '%s' \
                         AND cha.value != '' \
                         UNION ALL \
                         SELECT oe.subject_id, oe.charttime, oe.itemid, CAST(oe.value AS VARCHAR) \
                         FROM mimiciii.outputevents oe \
-                        WHERE subject_id IN (%s) \
-                        AND oe.hadm_id IN (%s) \
+                        WHERE subject_id = (%s) \
+                        AND oe.hadm_id = (%s) \
                         AND oe.itemid IN (%s) \
+                        AND oe.charttime >= '%s' \
                         AND oe.value IS NOT NULL \
                         ORDER BY subject_id, charttime;"
 
     return patientquery, measurementquery
-
-# This function takes in patient information and patient measurement information and 
-# NOTE: Need to add weight and height to patient information query
-def processPatients(data, hours, paraminfo):
-    patient_info = []
-    patientlist = data[0]
-    measurementlist = data[1]
-
-    ICUs = ['CCU', 'SICU', 'MICU', 'NICU', 'CSRU', 'TSICU']
-
-    # Process each patient
-    for patient in patientlist:
-        pmeasurements = []
-
-        # Obtain the measurements for this patient
-        measurements = filter(lambda m: m[0] == patient[0], measurementlist)
-
-        # Store static measurements for the patient
-        pmeasurements.append(['00:00','RecordID', patient[0]])
-        pmeasurements.append(['00:00','Age', (patient[5]-patient[6]).days // 365])
-        pmeasurements.append(['00:00','Gender', 0 if patient[7] == 'F' else 1])
-        pmeasurements.append(['00:00','Height', patient[9]])
-        pmeasurements.append(['00:00','ICUType', ICUs.index(patient[4])])
-        pmeasurements.append(['00:00','Weight', patient[10]])
-
-        # Process all measurements for this patient
-        for mim in measurements:
-            timediff = mim[1] - patient[5]
-            elapsedhours = timediff.days * 24 + timediff.seconds // 3600
-            elapsedminutes = (timediff.seconds % 3600) // 60
-            if(elapsedhours >= 0 and elapsedminutes >= 0):
-
-                # Stop once measurements exceed desired number of hours
-                if(hours != -1 and (elapsedhours >= hours and elapsedminutes >= 0)):
-                    break
-
-                # Choose the proper label for the measurement
-                label = filter(lambda param: mim[2] in param['ids'], paraminfo.values())[0]['abbr']
-
-                try:
-                    val = float(mim[3])
-                except:
-                    print('{} - {:02}:{:02} :: The value of type ({},{}) cannot be converted to a decimal: {}'.format(patient[0], elapsedhours, elapsedminutes, label, mim[2], mim[3]))
-
-                # Store dynamic measurements for the patient
-                pmeasurements.append(['{:02}:{:02}'.format(elapsedhours,elapsedminutes),label,mim[3]])
-                #print('{:02}:{:02},{},{}'.format(elapsedhours,elapsedminutes,label,mim[3]))
-
-        # Add the current patient's measurements to the patient_info list
-        patient_info.append(pmeasurements)
-
-    return patient_info
