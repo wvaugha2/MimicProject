@@ -176,8 +176,11 @@ def makeQueries(ICUInfo, ParamInfo, PatientInfo):
                         UNION ALL \
                         SELECT cha.subject_id, cha.charttime, cha.itemid, \
                         CASE \
+                            WHEN (cha.itemid IN (467,468) AND cha.value = 'None') \
+                            OR   (cha.itemid IN (720, 722) AND cha.stopped = 'D/C''d') \
+                            THEN '2.0' \
                             WHEN cha.itemid IN (467,468,720,722) \
-                            THEN cha.stopped \
+                            THEN '1.0' \
                             WHEN cha.itemid NOT IN (467,468,720,722) \
                             THEN cha.value \
                         END \

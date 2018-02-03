@@ -18,6 +18,7 @@ import sys
 import time
 import pickle
 import itertools
+import random
 
 import threading
 from multiprocessing import cpu_count
@@ -203,20 +204,26 @@ class PatientThreadPool:
                         # Handle the value of mechanical ventilation measurements.
                         if(mim[2] in (467,468,720,722)):
 
-                            # Assign the appropriate mech vent value
-                            if(mim[3] == "NotStopd" and lastvent == None):
+                            # Assign the appropriate mech vent value:
+                            # 0.0 - Mechanical ventilation not in use
+                            # 1.0 - Mechanical ventilation in use
+                            # 2.0 - Mechanical ventilation ending
+                            if(mim[3] == "1.0" and lastvent == None):
                                 lastvent = mim[1]
                                 val = 1.0
-                            elif(mim[3] == "NotStopd" and lastvent != None):
-                                tdiff = mim[1] - lastvent
-                                if(tdiff.hours >= 8):
+                            elif(lastvent != None):
+                                if(mim[3] == "1.0"):
+                                    hourdiff = (mim[1] - lastvent).seconds // 3600
+                                    if(hourdiff < 8):
+                                        lastvent = mim[1]
+                                        val = 1.0
+                                    else:
+                                        lastvent = None
+                                        val = 2.0
+                                elif(mim[3] == "2.0"):
                                     lastvent = None
-                                    val = 0.0
-                                else:
-                                    lastvent = mim[1]
-                                    val = 1.0
-                            elif(mim[3] == "D/C'd"):
-                                lastvent = None
+                                    val = 2.0
+                            elif(mim[3] == "2.0"):
                                 val = 0.0
                         
                         # Handle the value of non-mechanical ventilation measurements.
@@ -234,7 +241,7 @@ class PatientThreadPool:
             # Add the current patient's measurements to the patient_info list
             patient_info.append(pmeasurements)
             #print("{:10}: Processed {:10} patients out of {:10}".format(threading.get_ident(), n, len(patientlist)))
-
+        
         print("Thread finishing...")
 
         # Update the patient results before returning 
