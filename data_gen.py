@@ -9,8 +9,6 @@
 
 # Standard library imports
 import os
-import re
-import shutil
 import getpass
 import datetime
 import time
@@ -23,6 +21,7 @@ import psycopg2.extras
 import spec_parser 
 import data_access
 import stat_report
+import patient_processing
 import PatientThreadPool
 
 
@@ -42,7 +41,10 @@ def dataGen(cur, ptp):
     patientlist = data_access.obtainData(ICUInfo, ParamInfo, PatientInfo, cur, ptp)
 
     # Create patient dataset in parallel
-    ptp.evaluatePatients(PatientInfo, ParamInfo, patientlist)
+    ptp.executeFunc(
+        func=patient_processing.evaluatePatients,
+        args=[PatientInfo['Hours'], ParamInfo], 
+        splitargs=[patientlist])
     patientdata = ptp.getResults()
 
     # Perform any postprocessing
@@ -66,7 +68,6 @@ def dataGen(cur, ptp):
     # Print time elapsed
     totaltime = time.time() - starttime
     print("Total time taken (sec): {:.2f}".format(totaltime))
-
     return
 
 
@@ -77,11 +78,8 @@ if __name__ == '__main__':
         "database based on Specifications.txt.\n")
 
     # Prompt the user for access to the database.
-    #username = raw_input('Enter in your username for accessing Mimic III: ')
-    #password = getpass.getpass('Enter in your password for accessing Mimic III: ')
-
-    username = 'tyvaughan'
-    password = 'Boston94'
+    username = raw_input('Enter in your username for accessing Mimic III: ')
+    password = getpass.getpass('Enter in your password for accessing Mimic III: ')
 
     # Connect to mimic database.
     try:

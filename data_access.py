@@ -5,7 +5,6 @@ TO-DO: Add a database authentication file that authentication information can be
 
 '''
 
-
 '''
 -- ------------------------------------------------------------------------------------
 -- Title: Database Accessor
@@ -16,17 +15,15 @@ TO-DO: Add a database authentication file that authentication information can be
 '''
 
 # Standard library imports
-import os
 import sys
 import time
 import pickle
-import itertools
 
 # Related 3rd party imports
-import numpy as np
+# ...
 
 # Local application imports
-# . . .
+# ...
 
 # The function below takes the specification information and uses the functions in this file
 # data_access.py to access and return the dataset from the database.
@@ -44,10 +41,10 @@ def obtainData(ICUInfo, ParamInfo, PatientInfo, cur, ptp):
 
     # Access patient information from database
     atime = time.time()
-    #cur.execute(patientquery)
-    #patients = cur.fetchall()
-    with open ('patients', 'rb') as fp:
-        patients = pickle.load(fp)
+    cur.execute(patientquery)
+    patients = cur.fetchall()
+    #with open ('patients', 'rb') as fp:
+    #    patients = pickle.load(fp)
     print('Obtained patient info from database: {:10.2f} seconds'.format(time.time() - atime))
     
     # Get a string list of measurement IDs
@@ -58,21 +55,17 @@ def obtainData(ICUInfo, ParamInfo, PatientInfo, cur, ptp):
 
     # Access measurement information from database
     atime = time.time()
-    ptp.obtainMeasurements(patients, m_ids, measurementquery)
+    ptp.executeFunc(
+        func=obtainMeasurements, 
+        args=[m_ids, measurementquery], 
+        splitargs=[patients[:100]])
     patientlist = ptp.getResults()
-
-    '''
-    patientlist = []
-    for patient in patients:
-        cur.execute(measurementquery % (patient[0], patient[2], m_ids, patient[5],
-                                        patient[0], patient[2], m_ids, patient[5], 
-                                        patient[0], patient[2], m_ids, patient[5]))
-        mlist = cur.fetchall()
-        patientlist.append((patient,mlist))
-    '''
-
     print('Obtained measurements from database: {:10.2f} seconds'.format(time.time() - atime))
+
+    # Return the patient measurement information gathered.
     return patientlist
+
+
 
     #print(pidlist[0])
     #with open('patients', 'wb') as fp:
@@ -90,6 +83,39 @@ def obtainData(ICUInfo, ParamInfo, PatientInfo, cur, ptp):
     #    mlist = pickle.load(fp)
     #print(mlist[0])
 
+
+# The worker thread to be used for accessing patients' measurements.
+# m_ids:            The list of measurement IDs to extract from Mimic
+# measurementquery: The query used to extract measurements for a patient
+# patients:         The list of patients to extract measurements for
+# ptp:              The thread pool class instance.  Used to synchronize returned results.
+# cur:              A connection to the Mimic database.
+def obtainMeasurements(args):
+    m_ids               = args[0]
+    measurementquery    = args[1]
+    patients            = args[2]
+    ptp                 = args[3]
+    cur                 = args[4]
+
+    print("Thread starting - {} patients to process...".format(len(patients)))
+
+    # Access measurement information from database
+    patientlist = []
+    for patient in patients:
+        cur.execute(measurementquery % (patient[0], patient[2], m_ids, patient[5],
+                                        patient[0], patient[2], m_ids, patient[5], 
+                                        patient[0], patient[2], m_ids, patient[5]))
+        mlist = cur.fetchall()
+        patientlist.append((patient,mlist))
+
+    # Update the patient results before returning 
+    ptp.lock.acquire()
+    try:
+        ptp.results += patientlist
+    finally:
+        ptp.lock.release()
+    print("Thread finishing...")
+    return 
 
 # The function below takes the specification information and generates SQL queries to gather
 # the desired information from Mimic.
