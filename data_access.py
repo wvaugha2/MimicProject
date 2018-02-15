@@ -58,7 +58,7 @@ def obtainData(ICUInfo, ParamInfo, PatientInfo, cur, ptp):
     ptp.executeFunc(
         func=obtainMeasurements, 
         args=[m_ids, measurementquery], 
-        splitargs=[patients[:10]])
+        splitargs=[patients])
     patientlist = ptp.getResults()
     print('Obtained measurements from database: {:10.2f} seconds'.format(time.time() - atime))
 
