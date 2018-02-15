@@ -81,12 +81,12 @@ class StatReportGenerator:
                 f.write("Number of values recorded: {}\n".format(len(self.measurements[m]['vals'])))
 
                 try:
-                    f.write("Minimum: {:10.3f}\n".format( np.min(self.measurements[m]['vals']) ))
-                    f.write("First Q: {:10.3f}\n".format( np.percentile(self.measurements[m]['vals'], 25) ))
-                    f.write("Median : {:10.3f}\n".format( np.median(self.measurements[m]['vals']) ))
-                    f.write("Mean   : {:10.3f}\n".format( np.mean(self.measurements[m]['vals']) ))
-                    f.write("Third Q: {:10.3f}\n".format( np.percentile(self.measurements[m]['vals'], 75) ))
-                    f.write("Maximum: {:10.3f}\n\n".format( np.max(self.measurements[m]['vals']) ))
+                    f.write("Minimum: {:13.3f}\n".format( np.min(self.measurements[m]['vals']) ))
+                    f.write("First Q: {:13.3f}\n".format( np.percentile(self.measurements[m]['vals'], 25) ))
+                    f.write("Median : {:13.3f}\n".format( np.median(self.measurements[m]['vals']) ))
+                    f.write("Mean   : {:13.3f}\n".format( np.mean(self.measurements[m]['vals']) ))
+                    f.write("Third Q: {:13.3f}\n".format( np.percentile(self.measurements[m]['vals'], 75) ))
+                    f.write("Maximum: {:13.3f}\n\n".format( np.max(self.measurements[m]['vals']) ))
                 except Exception as e:
                     f.write('\n\n')
         os.chdir('..')
@@ -96,21 +96,21 @@ class StatReportGenerator:
 
 if __name__ == '__main__':
 
-    # Test if the provided path is a valid directory.
+    # Test if the provided path is a valid directory. If so, move to it.
     if(not os.path.isdir(sys.argv[1])):
         print("The given path \'{}\' is not a directory.".format(sys.argv[1]))
         exit(0)
+    os.chdir(sys.argv[1])
 
     # Obtain the data specifications from Specifications.txt
     ICUInfo, ParamInfo, PatientInfo = spec_parser.getSpecifications()
 
     # Obtain the patient data from the specified patient directory
     patientdata = []
-    os.chdir(sys.argv[1])
     for f in filter(lambda f : os.path.isfile(f) and f.endswith('.csv'), os.listdir('.')):
         patient = []
         with open(f, 'r') as fopen:
-            for line in fopen.readlines()[7:]:
+            for line in fopen.readlines()[1:]:
                 measurement = line.strip().split(',')
                 patient.append(measurement)
         patientdata.append(patient)

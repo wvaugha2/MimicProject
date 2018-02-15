@@ -12,6 +12,7 @@ import os
 import getpass
 import datetime
 import time
+from shutil import copyfile
 
 # Related 3rd party imports
 import psycopg2
@@ -64,6 +65,9 @@ def dataGen(cur, ptp):
     # Create a statistical report
     reportgen = stat_report.StatReportGenerator(ParamInfo)
     reportgen.createReport(patientdata, dirname)
+
+    # Move a copy of the Spec file used into the patient directory.
+    copyfile("Specifications.txt", "./"+dirname+"/Specifications.txt")
 
     # Print time elapsed
     totaltime = time.time() - starttime
