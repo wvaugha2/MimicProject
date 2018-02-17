@@ -36,15 +36,15 @@ def dataGen(cur, ptp):
     starttime = time.time()
 
     # Obtain the entry specifications from Specifications.txt
-    ICUInfo, ParamInfo, PatientInfo = spec_parser.getSpecifications()
+    icu_info, param_info, patient_info = spec_parser.getSpecifications()
 
     # Obtain the patient datasets based on the specifications.
-    patientlist = data_access.obtainData(ICUInfo, ParamInfo, PatientInfo, cur, ptp)
+    patientlist = data_access.obtainData(icu_info, param_info, patient_info, cur, ptp)
 
     # Create patient dataset in parallel
     ptp.executeFunc(
         func=patient_processing.evaluatePatients,
-        args=[PatientInfo['Hours'], ParamInfo], 
+        args=[patient_info['Hours'], param_info], 
         splitargs=[patientlist])
     patientdata = ptp.getResults()
 

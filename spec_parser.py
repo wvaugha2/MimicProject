@@ -21,13 +21,10 @@ def getSpecifications():
     PatientInfo = {}
     ICUs = []
 
+    # Use a boolean value to keep track of which section the parser is in.
     check_icu = False
     check_pat = False
     check_mea = False
-
-    icu_index = (0,0)
-    params_index = (0,0)
-    patients_index = (0,0)
 
     f = open('Specifications.txt')
     
@@ -35,6 +32,10 @@ def getSpecifications():
     for line in f.readlines():
         line = line.strip()
         if(line != ''):
+
+            ###################################################
+            # First, perform any checks for entering a section.
+            ###################################################
 
             if(line == '#ICUs'):
                 check_icu = True
@@ -53,6 +54,10 @@ def getSpecifications():
 
             elif(line == '#End'):
                 break
+
+            ###################################################
+            # Second, access information for a section.
+            ###################################################
 
             # Obtain ICU information
             elif(check_icu == True):

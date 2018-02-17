@@ -30,14 +30,14 @@ import pickle
 # ICUInfo:     a list of True/False values that determine which ICUs to use.
 # ParamInfo:   a dictionary of measurement parameters to obtain from the database
 # PatientInfo: a dictionary of patient information specifying the types of patients to analyze
-def obtainData(ICUInfo, ParamInfo, PatientInfo, cur, ptp):
+def obtainData(icu_info, param_info, patient_info, cur, ptp):
 
     #####################################
     # Create and perform database queries
     #####################################
 
     # Obtain the patient and measurement queries
-    patientquery, measurementquery = makeQueries(ICUInfo, ParamInfo, PatientInfo)
+    patientquery, measurementquery = makeQueries(icu_info, patient_info)
 
     # Access patient information from database
     atime = time.time()
@@ -49,8 +49,8 @@ def obtainData(ICUInfo, ParamInfo, PatientInfo, cur, ptp):
     
     # Get a string list of measurement IDs
     m_ids = '\''+"','".join(
-        "','".join("%s" % m for m in ParamInfo[key]['ids'])
-        for key in ParamInfo.keys()
+        "','".join("%s" % m for m in param_info[key]['ids'])
+        for key in param_info.keys()
         )+'\''
 
     # Access measurement information from database
@@ -122,10 +122,10 @@ def obtainMeasurements(args):
 # ICUInfo:     a list of True/False values that determine which ICUs to use.
 # ParamInfo:   a dictionary of measurement parameters to obtain from the database
 # PatientInfo: a dictionary of patient information specifying the types of patients to analyze
-def makeQueries(ICUInfo, ParamInfo, PatientInfo):
+def makeQueries(icu_info, patient_info):
 
     # String ICU types together.
-    icutypes = '\''+"','".join(ICUInfo)+'\''
+    icutypes = '\''+"','".join(icu_info)+'\''
     if(icutypes == "\'\'"):
         sys.stderr.write("Specifications.txt Error: At least one ICU type must be included")
         exit(0)
@@ -185,9 +185,9 @@ def makeQueries(ICUInfo, ParamInfo, PatientInfo):
                     AND p.gender IN ({})                                                                    \
                     AND p.first_careunit IN ({})                                                            \
                     ORDER BY subject_id".format(
-                        PatientInfo['Hours'] / 24, 
-                        PatientInfo['Age']['min'], PatientInfo['Age']['max'],
-                        "\'M\',\'F\'" if PatientInfo['Sex'] == 'Both' else "\'"+PatientInfo['Sex']+"\'",
+                        patient_info['Hours'] / 24, 
+                        patient_info['Age']['min'], patient_info['Age']['max'],
+                        "\'M\',\'F\'" if patient_info['Sex'] == 'Both' else "\'"+patient_info['Sex']+"\'",
                         icutypes,
                         )
 

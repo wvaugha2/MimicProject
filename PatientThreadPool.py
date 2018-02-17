@@ -15,7 +15,7 @@ from __future__ import division
 # Standard library imports
 import copy
 import threading
-from multiprocessing import cpu_count
+from multiprocessing import cpu_count, Process
 
 # Related 3rd party imports
 import numpy as np

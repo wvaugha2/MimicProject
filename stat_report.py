@@ -20,9 +20,6 @@ Things to implement:
 import os
 import sys
 import datetime
-import thread
-import itertools
-from multiprocessing import Pool, cpu_count
 
 # Related 3rd party imports
 import numpy as np
@@ -34,12 +31,12 @@ class StatReportGenerator:
 
     # This function initializes the statistics report generator.  
     # ParamInfo:    Obtained from spec_parser.getSpecifications()
-    def __init__ (self, ParamInfo):
+    def __init__ (self, paraminfo):
         self.numpatients = 0        # Total number of patients
         self.measurements = {}      # To keep track of measurement stats
 
         # Initialize the measurement dictionary
-        for param in ParamInfo.keys():
+        for param in paraminfo.keys():
             self.measurements[param] = { 'vals': [], 'numpatients': 0 }
 
         return
