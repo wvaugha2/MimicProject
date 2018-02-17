@@ -63,7 +63,7 @@ def dataGen(cur, ptp):
     os.chdir('..')
 
     # Create a statistical report
-    reportgen = stat_report.StatReportGenerator(ParamInfo)
+    reportgen = stat_report.StatReportGenerator(param_info)
     reportgen.createReport(patientdata, dirname)
 
     # Move a copy of the Spec file used into the patient directory.

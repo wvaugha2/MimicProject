@@ -31,12 +31,12 @@ class StatReportGenerator:
 
     # This function initializes the statistics report generator.  
     # ParamInfo:    Obtained from spec_parser.getSpecifications()
-    def __init__ (self, paraminfo):
+    def __init__ (self, param_info):
         self.numpatients = 0        # Total number of patients
         self.measurements = {}      # To keep track of measurement stats
 
         # Initialize the measurement dictionary
-        for param in paraminfo.keys():
+        for param in param_info.keys():
             self.measurements[param] = { 'vals': [], 'numpatients': 0 }
 
         return
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     os.chdir(sys.argv[1])
 
     # Obtain the data specifications from Specifications.txt
-    ICUInfo, ParamInfo, PatientInfo = spec_parser.getSpecifications()
+    icu_info, param_info, patient_info = spec_parser.getSpecifications()
 
     # Obtain the patient data from the specified patient directory
     patientdata = []
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     os.chdir('..')
 
     # Create the report
-    srg = StatReportGenerator(ParamInfo)
+    srg = StatReportGenerator(param_info)
     srg.createReport(patientdata, sys.argv[1])
 
 
