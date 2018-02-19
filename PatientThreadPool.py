@@ -28,7 +28,7 @@ import psycopg2.extras
 class PatientThreadPool:
 
     # Initialize the class data and information
-    def __init__ (self, username, password):
+    def __init__ (self, conn_info):
         self.pool = []
         self.results = []
         self.lock = threading.Lock()
@@ -45,10 +45,10 @@ class PatientThreadPool:
             # Connect to mimic database.
             try:
                 con = psycopg2.connect(database= 'mimic',
-                    user = username,
-                    password = password,
-                    host = 'localhost',
-                    port = 5432)
+                    user = conn_info[0],
+                    password = conn_info[1],
+                    host = conn_info[2],
+                    port = conn_info[3])
             except:
                 print("Could not connect to Mimic III. Please try again.\n")
                 exit(0)

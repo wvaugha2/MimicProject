@@ -9,6 +9,7 @@
 
 # Standard library imports
 import os
+import sys
 import getpass
 import datetime
 import time
@@ -81,17 +82,26 @@ if __name__ == '__main__':
     print("This program will generate a dataset of patients from the Mimic III\n"
         "database based on Specifications.txt.\n")
 
+    # Ensure that we have the correct number of commandline arguments and access them
+    if(len(sys.argv) != 3):
+        print("Insufficient command line arguments given.  Expected: 'python data_gen.py [localhost] [port]'")
+        exit(0)
+    localhost = sys.argv[1]
+    port = int(sys.argv[2])
+
     # Prompt the user for access to the database.
     username = raw_input('Enter in your username for accessing Mimic III: ')
     password = getpass.getpass('Enter in your password for accessing Mimic III: ')
 
+    conn_info = (username, password, localhost, port)
+
     # Connect to mimic database.
     try:
         con = psycopg2.connect(database= 'mimic',
-            user = username,
-            password = password,
-            host = 'localhost',
-            port = 5432)
+            user = conn_info[0],
+            password = conn_info[1],
+            host = conn_info[2],
+            port = conn_info[3])
     except:
         print("Could not connect to Mimic III. Please try again.\n")
         exit(0)
@@ -100,7 +110,7 @@ if __name__ == '__main__':
     cur = con.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     # Create patient dataset in parallel; pass in UN and PW for threaded database connections
-    ptp = PatientThreadPool.PatientThreadPool(username, password)
+    ptp = PatientThreadPool.PatientThreadPool(conn_info)
 
     # Create patient dataset
     print('\nBeginning patient dataset generation\n')

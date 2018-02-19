@@ -184,7 +184,7 @@ def makeQueries(icu_info, patient_info):
                     AND p.intime < p.dob+interval '{}' year                                                 \
                     AND p.gender IN ({})                                                                    \
                     AND p.first_careunit IN ({})                                                            \
-                    ORDER BY subject_id".format(
+                    ORDER BY subject_id;".format(
                         patient_info['Hours'] / 24, 
                         patient_info['Age']['min'], patient_info['Age']['max'],
                         "\'M\',\'F\'" if patient_info['Sex'] == 'Both' else "\'"+patient_info['Sex']+"\'",
