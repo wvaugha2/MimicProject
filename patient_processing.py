@@ -71,30 +71,13 @@ def evaluatePatients(args):
 
                     # Handle the value of mechanical ventilation measurements.
                     if(mim[2] in (467,468,720,722)):
-
-                        # Assign the appropriate mech vent value:
-                        # 0.0 - Mechanical ventilation not in use
-                        # 1.0 - Mechanical ventilation in use
-                        # 2.0 - Mechanical ventilation ending
-                        if(mim[3] == "1.0" and lastvent == None):
-                            lastvent = mim[1]
-                            val = 1.0
-                        elif(lastvent != None):
-                            if(mim[3] == "1.0"):
-                                hourdiff = (mim[1] - lastvent).seconds // 3600
-                                if(hourdiff < 8):
-                                    lastvent = mim[1]
-                                    val = 1.0
-                                else:
-                                    lastvent = None
-                                    val = 2.0
-                            elif(mim[3] == "2.0"):
-                                lastvent = None
-                                val = 2.0
-                        elif(mim[3] == "2.0"):
-                            val = 0.0
+                        val, lastvent = handleMechVent(mim, lastvent)
                     
-                    # Handle the value of non-mechanical ventilation measurements.
+                    # Handle the value of troponin measurements.
+                    elif(mim[2] in (51002, 51003, 227429)):
+                        val = handleTroponin(mim)
+
+                    # Handle the value of measurements that aren't examined in a special way.
                     else:
                         val = float(mim[3])
 
@@ -118,3 +101,69 @@ def evaluatePatients(args):
         ptp.lock.release()
     print("Thread finishing...")
     return 
+
+
+
+# This function interprets mechanical ventilation measurements  
+# mim:        the measurement value for mechanical ventilation.
+# lastvent: the time of the last mechanical ventilation
+def handleMechVent(mim, lastvent):
+    # Assign the appropriate mech vent value:
+    # 0.0 - Mechanical ventilation not in use
+    # 1.0 - Mechanical ventilation in use
+    # 2.0 - Mechanical ventilation ending
+    if(mim[3] == "1.0" and lastvent == None):
+        lastvent = mim[1]
+        val = 1.0
+    elif(lastvent != None):
+        if(mim[3] == "1.0"):
+            hourdiff = (mim[1] - lastvent).seconds // 3600
+            if(hourdiff < 8):
+                lastvent = mim[1]
+                val = 1.0
+            else:
+                lastvent = None
+                val = 2.0
+        elif(mim[3] == "2.0"):
+            lastvent = None
+            val = 2.0
+    elif(mim[3] == "2.0"):
+        val = 0.0
+    return val, lastvent
+
+
+
+# This function interprets Troponin measurements that are not direclty associated
+# with a numerical value. If they are represented by an inequality, the value will
+# be denoted as one one-thousandth above or below the threshold.
+#   
+# Troponin T can be represented as <0.01 or a distinct value greater than or 
+# equal to 0.01.
+#
+# Troponin I can be represented as <0.03, >50.0 or a distinct value greater than or
+# equal to 0.04 and less than or equal to 50.0.  
+#
+# mim:    the troponin measurement value
+def handleTroponin(mim):
+
+    # Handle Troponin T
+    if(mim[2] in (51003, 227429)):
+        if('<' in mim[3] or "LESS" in mim[3]):          # <0.01
+            val = 0.009
+        else:
+            val = float(mim[3])
+
+    # Handle Troponin I
+    elif(mim[2] in (51002,)):
+        if('<' in mim[3] or "LESS" in mim[3]):          # <0.04
+            val = 0.029
+        elif('>' in mim[3] or "GREATER" in mim[3]):     # >50.0
+            val = 50.001
+        else:
+            val = float(mim[3])
+
+    # Default option.
+    else:
+        val = float(mim[3])
+
+    return val

@@ -53,12 +53,12 @@ def obtainData(icu_info, param_info, patient_info, cur, ptp):
         for key in param_info.keys()
         )+'\''
 
-    # Access measurement information from database
+    # Access measurement information from databcase
     atime = time.time()
     ptp.executeFunc(
         func=obtainMeasurements, 
         args=[m_ids, measurementquery], 
-        splitargs=[patients])
+        splitargs=[patients[:100]])
     patientlist = ptp.getResults()
     print('Obtained measurements from database: {:10.2f} seconds'.format(time.time() - atime))
 
@@ -169,7 +169,7 @@ def makeQueries(icu_info, patient_info):
                             AND c.charttime <= i.intime                                                     \
                             AND c.valuenum IS NOT NULL                                                      \
                             AND c.itemid IN (920, 1394, 4187, 3486,                                         \
-                                            3485, 4188, 226707)                                             \
+                                            3485, 4188, 226707, 226730)                                             \
                             ORDER BY c.charttime                                                            \
                             LIMIT 1), -1)) AS height                                                        \
                                                                                                             \

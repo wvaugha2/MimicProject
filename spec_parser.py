@@ -16,7 +16,7 @@ import sys
 # Local application imports
 # ...
 
-def getSpecifications():
+def getSpecifications(spec_file):
     ParamInfo = {}
     PatientInfo = {}
     ICUs = []
@@ -26,7 +26,7 @@ def getSpecifications():
     check_pat = False
     check_mea = False
 
-    f = open('Specifications.txt')
+    f = open(spec_file)
     
     # Determine the indices for gathering information.
     for line in f.readlines():
@@ -88,12 +88,12 @@ def getSpecifications():
 
             # Obtain Parameter Information
             elif(check_mea == True):
-                regex = '\s*(\w+);\s*([\w-]+);\s*(\w+);\s*(\[[\d,\s]*\])\s*'
+                regex = '\s*(\w+);\s*([\w-]+);\s*(\[[\d,\s]*\])\s*'
                 info = re.match(regex,line)
 
                 # Obtain parameter IDs.
                 ids = []
-                for e in info.group(4)[1:-1].split(','):
+                for e in info.group(3)[1:-1].split(','):
                     if(e != ''):
                         ids.append(int(e.strip()))
 
@@ -101,7 +101,6 @@ def getSpecifications():
                 ParamInfo[info.group(1)] = {
                     'abbr': info.group(1),
                     'name': info.group(2),
-                    'unit': info.group(3),
                     'ids': ids
                 }
 

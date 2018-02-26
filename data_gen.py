@@ -32,12 +32,12 @@ import PatientThreadPool
 # "Specifications.txt".
 # cur:      a connection to the MimicIII database
 # ptp:      an instance of PatientThreadPool for parallel functions
-def dataGen(cur, ptp):
+def dataGen(cur, ptp, spec_file):
 
     starttime = time.time()
 
     # Obtain the entry specifications from Specifications.txt
-    icu_info, param_info, patient_info = spec_parser.getSpecifications()
+    icu_info, param_info, patient_info = spec_parser.getSpecifications(spec_file)
 
     # Obtain the patient datasets based on the specifications.
     patientlist = data_access.obtainData(icu_info, param_info, patient_info, cur, ptp)
@@ -68,7 +68,7 @@ def dataGen(cur, ptp):
     reportgen.createReport(patientdata, dirname)
 
     # Move a copy of the Spec file used into the patient directory.
-    copyfile("Specifications.txt", "./"+dirname+"/Specifications.txt")
+    copyfile(spec_file, "./"+dirname+"/"+spec_file)
 
     # Print time elapsed
     totaltime = time.time() - starttime
@@ -83,11 +83,17 @@ if __name__ == '__main__':
         "database based on Specifications.txt.\n")
 
     # Ensure that we have the correct number of commandline arguments and access them
-    if(len(sys.argv) != 3):
-        print("Insufficient command line arguments given.  Expected: 'python data_gen.py [localhost] [port]'")
+    if(len(sys.argv) != 4):
+        print("Insufficient command line arguments given.  Expected: 'python data_gen.py [host] [port] [specfile]'")
         exit(0)
     localhost = sys.argv[1]
     port = int(sys.argv[2])
+
+    # Obtain the specifications file name and make sure that it exists.
+    spec_file = sys.argv[3]
+    if(not os.path.isfile(spec_file)):
+        print("Provided specifications file \'"+spec_file+"\' does not exist in the current directory.")
+        exit(0)
 
     # Prompt the user for access to the database.
     username = raw_input('Enter in your username for accessing Mimic III: ')
@@ -103,7 +109,7 @@ if __name__ == '__main__':
             host = conn_info[2],
             port = conn_info[3])
     except:
-        print("Could not connect to Mimic III. Please try again.\n")
+        print("Could not connect to Mimic III. Please make sure the database is accessible and try again.\n")
         exit(0)
 
     # Use a dictionary cursor to interact with database.
@@ -114,6 +120,6 @@ if __name__ == '__main__':
 
     # Create patient dataset
     print('\nBeginning patient dataset generation\n')
-    dataGen(cur, ptp)
+    dataGen(cur, ptp, spec_file)
 
 

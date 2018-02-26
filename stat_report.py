@@ -87,11 +87,17 @@ class StatReportGenerator:
                 except Exception as e:
                     f.write('\n\n')
         os.chdir('..')
+        print("Finished generating the report.")
 
         return
 
 
 if __name__ == '__main__':
+
+    # Ensure that we have the correct number of commandline arguments.
+    if(len(sys.argv) != 3):
+        print("Insufficient command line arguments given.  Expected: 'python stat_report.py [directory] [specfile]'.")
+        exit(0)
 
     # Test if the provided path is a valid directory. If so, move to it.
     if(not os.path.isdir(sys.argv[1])):
@@ -99,10 +105,17 @@ if __name__ == '__main__':
         exit(0)
     os.chdir(sys.argv[1])
 
+    # Obtain the specifications file name and make sure that it exists.
+    spec_file = sys.argv[2]
+    if(not os.path.isfile(spec_file)):
+        print("Provided specifications file \'"+spec_file+"\' does not exist in the directory \'"+sys.argv[1]+"\'.")
+        exit(0)
+
     # Obtain the data specifications from Specifications.txt
-    icu_info, param_info, patient_info = spec_parser.getSpecifications()
+    icu_info, param_info, patient_info = spec_parser.getSpecifications(spec_file)
 
     # Obtain the patient data from the specified patient directory
+    print("Loading patient data from specified directory...")
     patientdata = []
     for f in filter(lambda f : os.path.isfile(f) and f.endswith('.csv'), os.listdir('.')):
         patient = []
@@ -112,6 +125,7 @@ if __name__ == '__main__':
                 patient.append(measurement)
         patientdata.append(patient)
     os.chdir('..')
+    print("Finished loading patient data.")
 
     # Create the report
     srg = StatReportGenerator(param_info)
