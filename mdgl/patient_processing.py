@@ -69,6 +69,10 @@ def evaluatePatients(args):
                 try:
                     val = 0.0
 
+                    ####################################################
+                    #   Apply custom filters to interpret data.
+                    ####################################################
+
                     # Handle the value of mechanical ventilation measurements.
                     if(mim[2] in (467,468,720,722)):
                         val, lastvent = handleMechVent(mim, lastvent)
@@ -76,6 +80,10 @@ def evaluatePatients(args):
                     # Handle the value of troponin measurements.
                     elif(mim[2] in (51002, 51003, 227429)):
                         val = handleTroponin(mim)
+
+                    ####################################################
+                    #   Otherwise no specific handling needed.
+                    ####################################################
 
                     # Handle the value of measurements that aren't examined in a special way.
                     else:
@@ -86,6 +94,9 @@ def evaluatePatients(args):
                 except:
                     invalidmeasurements.append(
                         'PatientID - {}, Time - {:02}:{:02}, Measurement - {}, \
+                        MeasurementID - {}, Value - {}'.format(patient[0], elapsedhours, 
+                        elapsedminutes, label, mim[2], mim[3]))
+                    print('PatientID - {}, Time - {:02}:{:02}, Measurement - {}, \
                         MeasurementID - {}, Value - {}'.format(patient[0], elapsedhours, 
                         elapsedminutes, label, mim[2], mim[3]))
 
@@ -150,6 +161,8 @@ def handleTroponin(mim):
     if(mim[2] in (51003, 227429)):
         if('<' in mim[3] or "LESS" in mim[3]):          # <0.01
             val = 0.009
+        elif('>' in mim[3] or "GREATER" in mim[3]):
+            val = 25.001
         else:
             val = float(mim[3])
 
@@ -165,5 +178,50 @@ def handleTroponin(mim):
     # Default option.
     else:
         val = float(mim[3])
-
     return val
+
+
+# K 50971: '>' or GREATER than 10
+def handlePotassium():
+    return
+
+#Lactate 50813: '>' or GREATER than 30
+def handleLactate():
+    return
+
+#Glucose 50809: '>' or GREATER than 500/999
+def handleGlucose():
+    return
+
+#WBC 1542, 51301: '<' 0.1
+def handleWBC():
+    return
+
+#HCO3 50882: '>' or GREATER than 50
+#HCO3 50862: '<' or LESS than 5
+def handleHCO3():
+    return
+
+#Na 50983: '>' or GREATER than 180
+def handleSodium():
+    return
+
+#Platelets 828, 51265: '<' or LESS than 5
+def handlePlatelets():
+    return
+
+#ALT: '<' or LESS than 4
+def handleALT():
+    return
+
+#Albumin: '<' or LESS than 1
+def handleAlbumin():
+    return
+
+#Bilirubin 50885: '<' or LESS than 2
+def handleBilirubin():
+    return
+
+#Creatinine: '<' or LESS than 0.7
+def handleCreateine():
+    return
