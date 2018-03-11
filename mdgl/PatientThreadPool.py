@@ -75,9 +75,21 @@ class PatientThreadPool:
         # list for each thread.
         new_args = [copy.deepcopy(args) for i in range(self.cpus)]
         for arg in splitargs:
-            chunks = np.array_split(np.array(arg), self.cpus)
+            #chunks = np.array_split(np.array(arg), self.cpus)
+            #for i in range(self.cpus):
+            #    new_args[i].append(chunks[i])
+
+            chunks = []
+            val = int(len(arg) / self.cpus)
+            prev = 0
+            end = val
             for i in range(self.cpus):
-                new_args[i].append(chunks[i])
+                if i == self.cpus-1:
+                    new_args[i].append(arg[prev:])
+                else:
+                    new_args[i].append(arg[prev:end])
+                    prev = end
+                    end += val
 
         # Add a pointer to this class and a database connection to each 
         # thread's argument list

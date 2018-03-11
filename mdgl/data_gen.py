@@ -42,15 +42,18 @@ def dataGen(cur, ptp, spec_file):
     # Obtain the patient datasets based on the specifications.
     patientlist = data_access.obtainData(icu_info, param_info, patient_info, cur, ptp)
 
-    # Create patient dataset in parallel
+    # Process patient dataset information in parallel
+    atime = time.time()
+    print("Processing patient data...")
     ptp.executeFunc(
         func=patient_processing.evaluatePatients,
         args=[patient_info['Hours'], param_info], 
         splitargs=[patientlist])
     patientdata = ptp.getResults()
+    print("Finished processing patient data: {:10.2f} seconds.\n".format(time.time() - atime))
 
     # Perform any postprocessing
-    print('Number of patients collected: {}'.format(len(patientdata)))
+    print("Number of patients collected: {}".format(len(patientdata)))
 
     # Write out patient data to files
     dirname = "patientfiles " + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")

@@ -96,13 +96,9 @@ def evaluatePatients(args):
                         'PatientID - {}, Time - {:02}:{:02}, Measurement - {}, \
                         MeasurementID - {}, Value - {}'.format(patient[0], elapsedhours, 
                         elapsedminutes, label, mim[2], mim[3]))
-                    print('PatientID - {}, Time - {:02}:{:02}, Measurement - {}, \
-                        MeasurementID - {}, Value - {}'.format(patient[0], elapsedhours, 
-                        elapsedminutes, label, mim[2], mim[3]))
 
         # Add the current patient's measurements to the patient_info list
         patient_info.append(pmeasurements)
-        #print("{:10}: Processed {:10} patients out of {:10}".format(threading.get_ident(), n, len(patientlist)))
 
     # Update the patient results before returning 
     ptp.lock.acquire()

@@ -1,11 +1,6 @@
 from __future__ import division
 
 '''
-TO-DO: Add a database authentication file that authentication information can be read from.
-
-'''
-
-'''
 -- ------------------------------------------------------------------------------------
 -- Title: Database Accessor
 -- Description: This module contains the functions that will be used to develop SQL 
@@ -20,7 +15,7 @@ import time
 import pickle
 
 # Related 3rd party imports
-# ...
+import numpy as np
 
 # Local application imports
 # ...
@@ -43,10 +38,14 @@ def obtainData(icu_info, param_info, patient_info, cur, ptp):
     atime = time.time()
     cur.execute(patientquery)
     patients = cur.fetchall()
-    #with open ('patients', 'rb') as fp:
-    #    patients = pickle.load(fp)
-    print('Obtained patient info from database: {:10.2f} seconds'.format(time.time() - atime))
-    
+
+    ptp.executeFunc(
+        func=obtainWeightandHeight,
+        args=[],
+        splitargs=[patients])
+    patients = ptp.getResults()
+    print('Obtained patient info from database: {:10.2f} seconds.\n'.format(time.time() - atime))
+
     # Get a string list of measurement IDs
     m_ids = '\''+"','".join(
         "','".join("%s" % m for m in param_info[key]['ids'])
@@ -60,29 +59,82 @@ def obtainData(icu_info, param_info, patient_info, cur, ptp):
         args=[m_ids, measurementquery], 
         splitargs=[patients])
     patientlist = ptp.getResults()
-    print('Obtained measurements from database: {:10.2f} seconds'.format(time.time() - atime))
+    print('Obtained measurements from database: {:10.2f} seconds.\n'.format(time.time() - atime))
 
     # Return the patient measurement information gathered.
     return patientlist
 
 
 
-    #print(pidlist[0])
-    #with open('patients', 'wb') as fp:
-    #    pickle.dump(pidlist, fp)
+# The worker thread to be used for accessing patients' measurements.
+# patients:         The list of patients to extract measurements for
+# ptp:              The thread pool class instance.  Used to synchronize returned results.
+# cur:              A connection to the Mimic database.
+def obtainWeightandHeight(args):
+    patients            = args[0]
+    ptp                 = args[1]
+    cur                 = args[2]
 
-    #with open ('patients', 'rb') as fp:
-    #    pidlist = pickle.load(fp)
-    #print(pidlist[0])
+    print("Thread starting - {} patients to process...".format(len(patients)))
 
-    #with open('measurements', 'wb') as fp:
-    #    pickle.dump(mlist, fp)
-    #'''
+    weightQuery =   "SELECT COALESCE( (SELECT\
+                    CASE\
+                        WHEN c.itemid IN (3581)\
+                        THEN c.valuenum * 0.45359\
+                        WHEN c.itemid IN (3582)\
+                        THEN c.valuenum * 0.028349\
+                        ELSE c.valuenum\
+                    END AS value\
+                    FROM mimiciii.chartevents c\
+                    WHERE c.subject_id = (%s)\
+                    AND c.hadm_id = (%s)\
+                    AND c.charttime <= '%s'\
+                    AND c.valuenum IS NOT NULL\
+                    AND c.itemid IN (762, 763, 3723, 3580,\
+                                    3581, 3582)\
+                    ORDER BY c.charttime DESC\
+                    LIMIT 1), -1);"
+        
+    heightQuery =   "SELECT COALESCE( (SELECT\
+                    CASE\
+                        WHEN c.itemid IN (920, 1394, 4187, 3486, 226707)\
+                        THEN c.valuenum * 2.54\
+                        ELSE c.valuenum\
+                    END AS value\
+                    FROM mimiciii.chartevents c\
+                    WHERE c.subject_id = (%s)\
+                    AND c.hadm_id = (%s)\
+                    AND c.charttime <= '%s'\
+                    AND c.valuenum IS NOT NULL\
+                    AND c.itemid IN (920, 1394, 4187, 3486,\
+                                    3485, 4188, 226707, 226730)\
+                    ORDER BY c.charttime\
+                    LIMIT 1), -1);"
 
-    #with open ('measurements', 'rb') as fp:
-    #    mlist = pickle.load(fp)
-    #print(mlist[0])
+    # Access measurement information from database
+    patientlist = []
+    for patient in patients:
+        # Obtain the weight
+        cur.execute(weightQuery % (patient[0], patient[2], patient[5]))
+        mlist = cur.fetchall()
+        weight = mlist[0][0]
 
+        # Obtain the height
+        cur.execute(heightQuery % (patient[0], patient[2], patient[5]))
+        mlist = cur.fetchall()
+        height = mlist[0][0]
+
+        # Store the patient's weight and height.
+        patientlist.append( np.append(patient,[height,weight]) )
+
+    # Update the patient results before returning 
+    ptp.lock.acquire()
+    try:
+        ptp.results += patientlist
+    finally:
+        ptp.lock.release()
+    print("Thread finishing...")
+    return
 
 # The worker thread to be used for accessing patients' measurements.
 # m_ids:            The list of measurement IDs to extract from Mimic
@@ -131,59 +183,22 @@ def makeQueries(icu_info, patient_info):
         exit(0)
 
     # Create the query to obtain patients
-    patientquery = "WITH patients AS(                                                                       \
-                        SELECT                                                                              \
-                        i.subject_id, i.icustay_id, i.hadm_id, i.los,                                       \
-                        i.first_careunit, i.intime, p.dob, p.gender,                                        \
-                        row_number() OVER (partition BY i.subject_id ORDER BY i.intime desc) AS lasttime,   \
-                                                                                                            \
-                        /* Obtain the weight of the patient recorded closest to ICU admission  */           \
-                        (   SELECT COALESCE( (SELECT                                                        \
-                            CASE                                                                            \
-                                WHEN c.itemid IN (3581)                                                     \
-                                THEN c.valuenum * 0.45359                                                   \
-                                WHEN c.itemid IN (3582)                                                     \
-                                THEN c.valuenum * 0.028349                                                  \
-                                ELSE c.valuenum                                                             \
-                            END AS value                                                                    \
-                            FROM mimiciii.chartevents c                                                     \
-                            WHERE c.subject_id = i.subject_id                                               \
-                            AND c.hadm_id = i.hadm_id                                                       \
-                            AND c.charttime <= i.intime                                                     \
-                            AND c.valuenum IS NOT NULL                                                      \
-                            AND c.itemid IN (762, 763, 3723, 3580,                                          \
-                                            3581, 3582)                                                     \
-                            ORDER BY c.charttime DESC                                                       \
-                            LIMIT 1), -1)) AS weight,                                                       \
-                                                                                                            \
-                        /* Obtain the height of the patient recorded closest to ICU admission  */           \
-                        (   SELECT COALESCE( (SELECT                                                        \
-                            CASE                                                                            \
-                                WHEN c.itemid IN (920, 1394, 4187, 3486, 226707)                            \
-                                THEN c.valuenum * 2.54                                                      \
-                                ELSE c.valuenum                                                             \
-                            END AS value                                                                    \
-                            FROM mimiciii.chartevents c                                                     \
-                            WHERE c.subject_id = i.subject_id                                               \
-                            AND c.hadm_id = i.hadm_id                                                       \
-                            AND c.charttime <= i.intime                                                     \
-                            AND c.valuenum IS NOT NULL                                                      \
-                            AND c.itemid IN (920, 1394, 4187, 3486,                                         \
-                                            3485, 4188, 226707, 226730)                                             \
-                            ORDER BY c.charttime                                                            \
-                            LIMIT 1), -1)) AS height                                                        \
-                                                                                                            \
-                        FROM mimiciii.icustays i                                                            \
-                        INNER JOIN mimiciii.patients p ON p.subject_id = i.subject_id                       \
-                    )                                                                                       \
-                    SELECT *                                                                                \
-                    FROM patients p                                                                         \
-                    WHERE p.los >= {}                                                                       \
-                    AND p.lasttime = 1                                                                      \
-                    AND p.intime > p.dob+interval '{}' year                                                 \
-                    AND p.intime < p.dob+interval '{}' year                                                 \
-                    AND p.gender IN ({})                                                                    \
-                    AND p.first_careunit IN ({})                                                            \
+    patientquery = "WITH patients AS( \
+                        SELECT \
+                        i.subject_id, i.icustay_id, i.hadm_id, i.los, \
+                        i.first_careunit, i.intime, p.dob, p.gender, \
+                        row_number() OVER (partition BY i.subject_id ORDER BY i.intime desc) AS lasttime \
+                        FROM mimiciii.icustays i \
+                        INNER JOIN mimiciii.patients p ON p.subject_id = i.subject_id \
+                    ) \
+                    SELECT * \
+                    FROM patients p \
+                    WHERE p.los >= {} \
+                    AND p.lasttime = 1 \
+                    AND p.intime > p.dob+interval '{}' year \
+                    AND p.intime < p.dob+interval '{}' year \
+                    AND p.gender IN ({}) \
+                    AND p.first_careunit IN ({}) \
                     ORDER BY subject_id;".format(
                         patient_info['Hours'] / 24, 
                         patient_info['Age']['min'], patient_info['Age']['max'],
