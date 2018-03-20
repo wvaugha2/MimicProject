@@ -13,7 +13,7 @@ TSICU   False
 
 Age; 16; 999
 Sex; Both
-Hours; 48
+Hours; 48; 1
 
 #Parameters
 

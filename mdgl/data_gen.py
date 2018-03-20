@@ -47,7 +47,7 @@ def dataGen(cur, ptp, spec_file):
     print("Processing patient data...")
     ptp.executeFunc(
         func=patient_processing.evaluatePatients,
-        args=[patient_info['Hours'], param_info], 
+        args=[patient_info['Hours']['limit'], param_info], 
         splitargs=[patientlist])
     patientdata = ptp.getResults()
     print("Finished processing patient data: {:10.2f} seconds.\n".format(time.time() - atime))

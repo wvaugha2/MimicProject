@@ -84,7 +84,12 @@ def getSpecifications(spec_file):
                         exit(0)
                     PatientInfo['Sex'] = tmp
                 elif(elements[0] == 'Hours'):
-                    PatientInfo['Hours'] = max(int(elements[1]),0)
+                    if(int(elements[2]) not in (0,1)):
+                        sys.stderr.write("Error: Specifications.txt - 'Hours - required' field must be 0 or 1.\n")
+                    PatientInfo['Hours'] = {
+                        'limit': max(int(elements[1]),0),
+                        'req': int(elements[2])
+                    }
 
             # Obtain Parameter Information
             elif(check_mea == True):

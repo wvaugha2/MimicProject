@@ -192,15 +192,17 @@ def makeQueries(icu_info, patient_info):
                         INNER JOIN mimiciii.patients p ON p.subject_id = i.subject_id \
                     ) \
                     SELECT * \
-                    FROM patients p \
-                    WHERE p.los >= {} \
-                    AND p.lasttime = 1 \
+                    FROM patients p WHERE " 
+
+    if(patient_info['Hours']['req'] == 1):
+        patientquery += "p.los >= {} AND ".format(patient_info['Hours']['limit'] / 24)
+
+    patientquery += "p.lasttime = 1 \
                     AND p.intime > p.dob+interval '{}' year \
                     AND p.intime < p.dob+interval '{}' year \
                     AND p.gender IN ({}) \
                     AND p.first_careunit IN ({}) \
-                    ORDER BY subject_id;".format(
-                        patient_info['Hours'] / 24, 
+                    ORDER BY subject_id;".format( 
                         patient_info['Age']['min'], patient_info['Age']['max'],
                         "\'M\',\'F\'" if patient_info['Sex'] == 'Both' else "\'"+patient_info['Sex']+"\'",
                         icutypes,

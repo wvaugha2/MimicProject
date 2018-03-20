@@ -15,7 +15,7 @@ from __future__ import division
 # Standard library imports
 import copy
 import threading
-from multiprocessing import cpu_count, Process
+from multiprocessing import cpu_count
 
 # Related 3rd party imports
 import numpy as np
@@ -75,10 +75,8 @@ class PatientThreadPool:
         # list for each thread.
         new_args = [copy.deepcopy(args) for i in range(self.cpus)]
         for arg in splitargs:
-            #chunks = np.array_split(np.array(arg), self.cpus)
-            #for i in range(self.cpus):
-            #    new_args[i].append(chunks[i])
 
+            # Split the args into evenly sized chunks.
             chunks = []
             val = int(len(arg) / self.cpus)
             prev = 0
